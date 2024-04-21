@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import './App.css';
 function App() {
   const CLIENT_ID = "7291bcb33e0b424a863a0947005b6a6c"
-  const REDIRECT_URI = "http://localhost:3000"
+  const REDIRECT_URI = "https://spotifytestss.netlify.app"
   const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"
   const RESPONSE_TYPE = "token"
 
