@@ -10,6 +10,7 @@ function App() {
   const [token, setToken] = useState("")
   const [searchKey, setSearchKey] = useState("");
   const [artists, setArtists] = useState([])
+  const [selectedArtist, setSelectedArtist] = useState(null);
 
   useEffect(() => {
     const hash = window.location.hash
@@ -45,10 +46,25 @@ function App() {
     }
   }
 
+  const fetchArtistInfo = async (artistId) => {
+    try {
+      const { data } = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      }
+      );
+      console.log(data);
+      setSelectedArtist(data);
+    } catch (error) {
+      console.error("Error fetching artist info:", error);
+    }
+  }
+
   const renderArtists = () => {
     return artists.map(artist => (
       <div key={artist.id}>
-        {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt="" /> : <div>No Image</div>}
+        {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt="" onClick={() => fetchArtistInfo(artist.id)} /> : <div>No Image</div>}
         {artist.name}
       </div>
     ))
@@ -82,6 +98,17 @@ function App() {
               />
               <button type="submit">Search</button>
             </form>
+            {selectedArtist && (
+              <div>
+                <h2>{selectedArtist.name}</h2>
+                <p>Popularity: {selectedArtist.popularity}</p>
+                {selectedArtist.genres && (
+                  <p>Genres: {selectedArtist.genres.join(", ")}</p>
+                )}
+              </div>
+            )}
+
+
             {renderArtists()}
           </>
         )}
