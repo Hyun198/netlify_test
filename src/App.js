@@ -79,19 +79,7 @@ function App() {
     }
   }
 
-  const renderArtists = () => {
-    return artists.map(artist => (
-      <div className="artists" key={artist.id}>
-        {artist.images.length ? <img className="artist_img" src={artist.images[0].url} alt="" onClick={() => fetchArtistInfo(artist.id)} /> : <div>No Image</div>}
-        <div className="artist_info">
-          <p>{artist.name}</p>
-          <p>popularity: {artist.popularity}</p>
-          <p>{artist.genres}</p>
-        </div>
 
-      </div>
-    ))
-  }
 
   const logout = () => {
     setToken("")
