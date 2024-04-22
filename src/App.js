@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import axios from "axios";
+
 function App() {
   const CLIENT_ID = "7291bcb33e0b424a863a0947005b6a6c"
   const REDIRECT_URI = "https://spotifytestss.netlify.app"
@@ -10,7 +11,8 @@ function App() {
   const [token, setToken] = useState("")
   const [searchKey, setSearchKey] = useState("");
   const [artists, setArtists] = useState([])
-  const [selectedArtist, setSelectedArtist] = useState(null);
+  const [topTracks, setTopTracks] = useState([]);
+  const [topArtist, setTopArtist] = useState([]);
 
   useEffect(() => {
     const hash = window.location.hash
@@ -31,16 +33,28 @@ function App() {
     e.preventDefault()
     try {
 
-      const { data } = await axios.get("https://api.spotify.com/v1/search", {
+      const response = await axios.get("https://api.spotify.com/v1/search", {
         headers: {
           Authorization: `Bearer ${token}`
         },
         params: {
           q: searchKey,
-          type: "artist"
+          type: "artist",
+          limit: 10
         }
-      })
-      setArtists(data.artists.items)
+      });
+
+      const TopArtist = response.data.artists.items[0];
+      setTopArtist(TopArtist)
+      const TopArtistId = TopArtist.id;
+      const TopArtistsTracks = await axios.get(`https://api.spotify.com/v1/artists/${TopArtistId}/top-tracks`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+      });
+      setTopTracks(TopArtistsTracks.data.tracks)
+
+      setArtists(response.data.artists.items)
     } catch (error) {
       console.error("Error searching artists:", error);
     }
@@ -48,14 +62,18 @@ function App() {
 
   const fetchArtistInfo = async (artistId) => {
     try {
-      const { data } = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-      }
+      const { data } = await axios.get(
+        `https://api.spotify.com/v1/artists/${artistId}/top-tracks`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            country: "KR",
+          },
+        }
       );
-      console.log(data);
-      setSelectedArtist(data);
+      setTopTracks(data.tracks);
     } catch (error) {
       console.error("Error fetching artist info:", error);
     }
@@ -63,9 +81,14 @@ function App() {
 
   const renderArtists = () => {
     return artists.map(artist => (
-      <div key={artist.id}>
-        {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt="" onClick={() => fetchArtistInfo(artist.id)} /> : <div>No Image</div>}
-        {artist.name}
+      <div className="artists" key={artist.id}>
+        {artist.images.length ? <img className="artist_img" src={artist.images[0].url} alt="" onClick={() => fetchArtistInfo(artist.id)} /> : <div>No Image</div>}
+        <div className="artist_info">
+          <p>{artist.name}</p>
+          <p>popularity: {artist.popularity}</p>
+          <p>{artist.genres}</p>
+        </div>
+
       </div>
     ))
   }
@@ -77,42 +100,57 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Spotify React</h1>
+      <header className="header_container">
+        <h2>Spotify React</h2>
+        {token && (
+          <form className="search_box" onSubmit={searchArtists}>
+            <input
+              type="text"
+              className="search-input"
+              value={searchKey}
+              onChange={(e) => setSearchKey(e.target.value)}
+            />
+            <button type="submit">Search</button>
+          </form>
+        )}
         {!token ? (
           <a
             href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}
           >
-            Login to Spotify
+            Login
           </a>
         ) : (
-          <button onClick={logout}>Logout</button>
+          <button className="btn-logout" onClick={logout}>Logout</button>
         )}
-        {token && (
+
+      </header>
+      <main className="main_container">
+        {artists.length > 0 && (
           <>
-            <form onSubmit={searchArtists}>
-              <input
-                type="text"
-                value={searchKey}
-                onChange={(e) => setSearchKey(e.target.value)}
-              />
-              <button type="submit">Search</button>
-            </form>
-            {selectedArtist && (
-              <div>
-                <h2>{selectedArtist.name}</h2>
-                <p>Popularity: {selectedArtist.popularity}</p>
-                {selectedArtist.genres && (
-                  <p>Genres: {selectedArtist.genres.join(", ")}</p>
-                )}
+            <div className="top-artist">
+              <img className="topArtist_imgs" src={topArtist.images[0].url} alt={topArtist.name} />
+              <p className="top-artist-name">{topArtist.name}</p>
+              <p className='followers'>팔로워 수: {topArtist.followers.total}</p>
+              <div className='top-artist-info'>
+                {topArtist.genres.map(genre => (
+                  <p key={genre} className='genre'>{genre}</p>
+                ))}
               </div>
-            )}
-
-
-            {renderArtists()}
+            </div>
+            <div className="top-artist-tracks">
+              <ul>
+                {topTracks.map(track => (
+                  <div className="top-artist-track">
+                    <img className="track-image" src={track.album.images[0].url} alt={track.album.name} />
+                    <p className="track-title">{track.name}</p>
+                  </div>
+                ))}
+              </ul>
+            </div>
           </>
         )}
-      </header>
+
+      </main>
     </div>
   );
 }
